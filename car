@@ -1,0 +1,58 @@
+def car_funct():
+    from gpiozero import LED
+    from getkey import getkey, keys
+    import time
+
+    forward = LED(17)
+    back = LED(27)
+    left = LED(22)
+    right = LED(23)
+    forward.on()
+    back.on()
+    left.on()
+    right.on()
+    key = getkey()
+    while(1):
+        key = getkey()
+        if key == 'w':
+            back.on()
+            left.on()
+            right.on()
+            forward.off()
+            time.sleep(0.10)
+            forward.on()
+        
+        elif key == 'a':
+            forward.on()
+            back.on()
+            right.on()
+            left.off()
+            time.sleep(0.10)
+            left.on()
+        
+        elif key =="d":
+            forward.on()
+            back.on()
+            left.on()
+            right.off()
+            time.sleep(0.10)
+            right.on()
+
+        elif key == "s":
+            forward.on()
+            left.on()
+            right.on()
+            back.off()
+            time.sleep(0.10)
+            back.on()
+        
+        else:
+            forward.on()
+            back.on()
+            left.on()
+            right.on()
+        
+car_funct()    
+    
+
+
