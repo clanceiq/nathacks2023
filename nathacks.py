@@ -1,6 +1,6 @@
 ## IMPORTS ##
 from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
-from brainflow.data_filter import DataFilter, FilterTypes, DetrendOperations
+from brainflow.data_filter import DataFilter, FilterTypes, DetrendOperations, WaveletTypes, WaveletExtensionTypes
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -9,7 +9,9 @@ import argparse
 import logging
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtGui, QtCore
+import fftTest as FourierFT
 
+#which is plotting? line 30 or lines in 80s?
 
 def processData(cur_data):
     """ GET EEG Board Data """
@@ -22,7 +24,8 @@ def processData(cur_data):
 
 def passFiltering(cur_eeg_data):
     for channel in range(cur_eeg_data.shape[0]):
-        DataFilter.perform_lowpass(cur_eeg_data[channel], BoardShim.get_sampling_rate(board_id), 50.0, 5, FilterTypes.BUTTERWORTH, 1)
+        # may need to change 5/4 --> the order
+        DataFilter.perform_lowpass(cur_eeg_data[channel], BoardShim.get_sampling_rate(board_id), 50, 5, FilterTypes.BUTTERWORTH, 1)
         DataFilter.perform_highpass(cur_eeg_data[channel], BoardShim.get_sampling_rate(board_id), 2.0, 4, FilterTypes.BUTTERWORTH, 0)
     plt.plot(np.arange(cur_eeg_data.shape[1]), cur_eeg_data[0])
     return cur_eeg_data
@@ -57,10 +60,12 @@ class Graph:
         self.sampling_rate = BoardShim.get_sampling_rate(self.board_id)
         self.update_speed_ms = 50
         self.window_size = 4
-        self.num_points = self.window_size * self.sampling_rate
+        #self.num_points = self.window_size * self.sampling_rate
+        self.num_points = 200 #next thing: how do we limit range
 
-        self.app = QtGui.QApplication([])
-        self.win = pg.GraphicsWindow(title='BrainFlow Plot', size=(800, 600))
+        self.app = QtGui.QApplication([])  #this is the application from PyQt5
+        #changed title
+        self.win = pg.GraphicsWindow(title='FFT Plot', size=(800, 600))
 
         self._init_timeseries()
 
@@ -74,20 +79,23 @@ class Graph:
         self.curves = list()
         for i in range(len(self.exg_channels)):
             p = self.win.addPlot(row=i, col=0)
-            p.showAxis('left', False)
+            p.showAxis('left', True)
             p.setMenuEnabled('left', False)
-            p.showAxis('bottom', False)
+            p.showAxis('bottom', True)
             p.setMenuEnabled('bottom', False)
             if i == 0:
-                p.setTitle('TimeSeries Plot')
+                #changed title
+                p.setTitle('FFT Transform Plot')
             self.plots.append(p)
             curve = p.plot()
             self.curves.append(curve)
 
+    #for changing the y-values
     def update(self):
         data = self.board_shim.get_current_board_data(self.num_points)
         for count, channel in enumerate(self.exg_channels):
             # plot timeseries
+            ###add the lines for the low and high passes
             DataFilter.detrend(data[channel], DetrendOperations.CONSTANT.value)
             DataFilter.perform_bandpass(data[channel], self.sampling_rate, 3.0, 45.0, 2,
                                         FilterTypes.BUTTERWORTH_ZERO_PHASE, 0)
@@ -95,9 +103,19 @@ class Graph:
                                         FilterTypes.BUTTERWORTH_ZERO_PHASE, 0)
             DataFilter.perform_bandstop(data[channel], self.sampling_rate, 58.0, 62.0, 2,
                                         FilterTypes.BUTTERWORTH_ZERO_PHASE, 0)
+            #print(fourierFT.getFFTdata(data[channel], BoardShim.get_sampling_rate(board_id)))
+            #freq, data[channel], peakLocations = fourierFT.getFFTdata(data[channel], BoardShim.get_sampling_rate(board_id))
             self.curves[count].setData(data[channel].tolist())
 
-        self.app.processEvents()
+        for channel in self.exg_channels:
+            self.curves[channel-1].setData(np.asarray(FourierFT.getFFTdata(data[channel], self.sampling_rate)))
+            """
+            print(len(self.curves))
+            print("this is data len: " + str(len(data)))
+            print(channel)
+            print(self.exg_channels)
+            """
+        self.app.processEvents()  ##should be the "update"
 
 
 if __name__ == "__main__":
@@ -105,7 +123,7 @@ if __name__ == "__main__":
     # will either use the connected board or will create a synthetic board #
     """
     params = BrainFlowInputParams()
-    params.serial_port = 'COM5' # CHANGE THIS
+    params.serial_port = 'COM15' # CHANGE THIS
     board_id = BoardIds.GANGLION_BOARD.value
     try:
         assert board_id == BoardIds.GANGLION_BOARD.value
@@ -129,9 +147,11 @@ if __name__ == "__main__":
         current_data = board.get_current_board_data(25) # adjust number of samples so that it doesn't overlap each loop
         current_eeg_data = processData(current_data)
         current_eeg_data = passFiltering(current_eeg_data)
-        wavelet_coeffs, lengths, app_coeffs, detailed_coeffs_first_block = waveletTransform(current_eeg_data)
-        print(app_coeffs)
-    data = board.get_board_data()
+        #print(current_eeg_data) #at this point, it's a numpy array of the timeseries y-axis
+        #freq, current_eeg_data, peaks = fourierFT.getFFTdata(current_eeg_data, BoardShim.get_sampling_rate(-1))
+        #wavelet_coeffs, lengths, app_coeffs, detailed_coeffs_first_block = waveletTransform(current_eeg_data)
+        #print(app_coeffs)
+    #data = board.get_board_data() #all the board's data
     print("Ending Stream")
     board.stop_stream()
     board.release_session() # all data is colleted and removed from buffer

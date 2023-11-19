@@ -11,21 +11,27 @@ import matplotlib.pyplot as plt
 def getFFTdata(dataArray, samplingRate):
     fftData = np.fft.fft(dataArray)
     freq = np.fft.fftfreq(len(dataArray))*samplingRate
+    #gather frequencies given the sampling rate and the amount of data collected
 
-    #fftData = fftData[0:int(len(fftData)/2)]
-    #freq = freq[0:int(len(fftData)/2)]
+    fftData = fftData[1:int(len(fftData)/2)]
+    freq = freq[1:int(len(freq)/2)]
     #fftData = fftData[0:249]
     #freq = freq[0:249]
 
-    magnitudeList = []
+    #get magnitudes
+    magnitude = []
     for entry in fftData:
-        magnitudeList.append(abs(entry))
-    magnitude = np.array(magnitudeList)
+        magnitude.append(abs(entry))
 
+    #magnitude = magnitude[0].tolist() #convert from a numpy array
+    
+    return magnitude
+
+def findPeaks(freq, magnitude):
     if len(magnitude) == len(freq):
         pairing = dict(zip(magnitude, freq))
-
-
+    
+    magnitude = np.asarray(magnitude)
     maxima = argrelextrema(magnitude, np.greater)
     peaksHz = []
     #how do we not make this an embedded array?
@@ -33,9 +39,10 @@ def getFFTdata(dataArray, samplingRate):
         peaksHz.append(freq[entry])
         peaksHz = peaksHz[0].tolist()
     #print(str(magnitude[entry])+","+str(freq[entry]))
+    return peaksHz
 
-    return freq, magnitudeList, peaksHz
 
+    
 #accessing peaks
 """
 print(peaksHz)    
@@ -46,7 +53,7 @@ print(peaksHz[0][1])
 #print(str(len(fftData))+" "+str(len(freq)))
 
 #OTHER CODE
-
+"""
 time = np.linspace(0, 0.5, 500)
 samples_per_sec = 1000
 
@@ -58,10 +65,17 @@ sine_two = amp_two * np.sin(freq_two * 2 * np.pi * time)
 
 combined = sine_one + sine_two
 
-freq, magnitudeList, peaksHz = getFFTdata(combined, samples_per_sec)
-print(peaksHz)
-plt.plot(freq, magnitudeList)
-plt.show()
+freq, magnitude = getFFTdata(combined, samples_per_sec)
+print(freq)
+print(len(freq))
+print(magnitude)
+print(len(magnitude))
+peaks = findPeaks(freq, magnitude)
+print(peaks)
+"""
+#plt.plot(freq, magnitudeList)
+#plt.show()
+
 
 """
 dict = {1:'a',2:'b',3:'c'}
