@@ -5,8 +5,8 @@ How does BabyExo work?
 - BabyExo uses the Brainflow library to collect and filter EEG data gathered by our OpenBCI headset. It uses 4 channels, each channel connected to a different electrode to gather the data.
   
 To run code:
-  - Must be on Python 3.10
-      - create/open a virtual environment
-      - install all the libraries required
+- Open a Python Version 3.10 Virtual Environment
+- Install all the required libraries using the "requirements.txt" file
+  - One of the libraries you may need to install yourself
    
 
