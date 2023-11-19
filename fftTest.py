@@ -27,6 +27,13 @@ def getFFTdata(dataArray, samplingRate):
     
     return magnitude
 
+def getFFTfreq(dataArray, samplingRate):
+    freq = np.fft.fftfreq(len(dataArray))*samplingRate
+    freq = freq[1:int(len(freq)/2)]
+
+    
+    return freq
+
 def findPeaks(freq, magnitude):
     if len(magnitude) == len(freq):
         pairing = dict(zip(magnitude, freq))
